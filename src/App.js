@@ -19,6 +19,9 @@ function App() {
   const [data, setData] = useState(null);
   const [location, setLocation] = useState("Bucharest")
   const [inputValue, setInputValue] = useState('');
+  const [animate, setAnimate] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errMsg, setErrMsg] = useState('');
 
   const handleInput = (e) => {
     setInputValue(e.target.value)
@@ -30,25 +33,50 @@ function App() {
     }
 
     const input = document.querySelector("input");
+
+    if(input.value == ''){
+      setAnimate(true);
+
+      setTimeout(() => {
+        setAnimate(false)
+      }, 500);
+    }
+
     input.value = '';
     e.preventDefault();
   }
 
   //fetch Data
   useEffect(() => {
+
+    setLoading(true)
     const url = `https://api.openweathermap.org/data/2.5/weather?q=${location}&units=metric&appid=${APIkey}`;
     axios.get(url)
       .then((res) => {
-        setData(res.data)
+        setTimeout(() => {
+          setData(res.data)
+          setLoading(false);
+        }, 1500);
+      }).catch(err => {
+        setLoading(false)
+        setErrMsg(err)
       })
     
   }, [location])
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setErrMsg('')
+    }, 2000);
+
+    return () => clearTimeout(timer)
+  }, [errMsg])
+
   if(!data){
     return (
-      <div>
+      <div className="w-full h-screen bg-gradientBg bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center">
         <div>
-          <ImSpinner8 className="text-5xl animate-spin"/>
+          <ImSpinner8 className="text-5xl animate-spin text-white"/>
         </div>
       </div>
     )
@@ -59,22 +87,22 @@ function App() {
 
   switch(data.weather[0].main){
     case 'Clouds':
-      icon = <IoMdCloudy />
+      icon = <IoMdCloudy className="text-[#31cafb]"/>
       break;
     case 'Haze':
       icon = <BsCloudHaze2Fill />
       break;
     case 'Rain':
-      icon = <IoMdRainy />
+      icon = <IoMdRainy className="text-[#31cafb]"/>
       break;
     case 'Clear':
-      icon = <IoMdSunny />
+      icon = <IoMdSunny className="text-[#ffde33]"/>
       break;
     case 'Drizzle':
-      icon = <BsCloudDrizzleFill />
+      icon = <BsCloudDrizzleFill className="text-[#31cafb]"/>
       break;
     case 'Snow':
-      icon = <IoMdSnow />
+      icon = <IoMdSnow className="text-[#31cafb]"/>
       break;
     case 'Thunderstorm':
       icon = <IoMdThunderstorm />
@@ -85,22 +113,28 @@ function App() {
 
   return (
     <div className="w-full h-screen bg-gradientBg bg-no-repeat bg-cover bg-center flex flex-col items-center justify-center px-6 lg:px-0 ">
+      {errMsg && <div className="w-full max-w-[90vw] lg:max-w-[450px] bg-[#ff208c] text-white absolute top-2 lg:top-8 py-2 px-4 capitalilze rounded-md">{errMsg.response.data.message}</div>}
       {/* form */}
-      <form className="h-10 bg-black/30 w-full max-w-[450px] mb-8 backdrop-blur-[20px] rounded-2xl ">
+      <form className={`${animate? "animate-shake" : "animate-none"} h-10 bg-black/30 w-full max-w-[450px] mb-8 backdrop-blur-[20px] rounded-2xl`}>
         <div className="h-full relative flex items-center justify-between">
           <input onChange={(e) => handleInput(e)} className="flex-1 bg-transparent outline-none ml-4 flex justify-center placeholder:text-white text-white h-full text-[15px] font-light" type="text" placeholder="Search by city or country"/>
-          <button onClick={(e) => handleSubmit(e)}  className="w-16 h-8 bg-[#1ab8ed] hover:bg-[#129bc9]  rounded-xl mr-2 flex items-center justify-center text-xl text-white">
+          <button onClick={(e) => handleSubmit(e)}  className="w-14 h-8 bg-[#1ab8ed] hover:bg-[#129bc9]  rounded-xl mr-2 flex items-center justify-center text-xl text-white">
             <IoMdSearch />
           </button>
         </div>
       </form>
       {/* cards */}
-      <div className="w-full max-w-[450px] text-white min-h-[480px] backdrop-blur-[24px] bg-black/20 py-12 px-6 rounded-[10px]">
-        <div>
+      <div className="w-full max-w-[430px] text-white min-h-[400px] backdrop-blur-[24px] bg-black/20 py-6 px-6 rounded-[10px]">
+        {loading ? (
+          <div className="w-full h-full flex justify-center items-center">
+            <ImSpinner8 className="text-white text-4xl animate-spin "/>
+          </div>
+        ) : (
+          <div className="flex flex-col justify-between h-full">
           {/* card top */}
           <div className="flex items-center gap-x-5">
             {/* icon */}
-            <div className="text-[60px]">{icon}</div>
+            <div className="text-[50px]">{icon}</div>
             <div>
               {/* country name */}
               <div className="text-2xl font-semibold">{data.name}, {data.sys.country}</div>
@@ -110,15 +144,15 @@ function App() {
             </div>
           </div>
           {/* card body */}
-          <div className="my-16">
+          <div className="my-8">
             <div className="flex items-center justify-center">
-              <div className="text-[100px] font-light leading-none">{parseInt(data.main.temp)}</div>
-              <div className="text-4xl"><TbTemperatureCelsius /></div>
+              <div className="text-[70px] font-light leading-none">{parseInt(data.main.temp)}</div>
+              <div className="text-3xl"><TbTemperatureCelsius /></div>
             </div>
             <div className="capitalize text-center">{data.weather[0].description}</div>
           </div>
           {/* card bottom */}
-          <div className="max-w-[380px] mx-auto flex flex-col gap-y-6">
+          <div className="max-w-[380px] mx-auto flex flex-col gap-y-6 w-full">
             <div className="flex justify-between">
               <div className="flex items-center gap-x-2">
                 <div className="text-[20px]"><BsEye /></div>
@@ -149,6 +183,7 @@ function App() {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
